@@ -124,11 +124,16 @@ public static class AltarSmash
 					num3 *= 0.9f;
 				}
 
-				if (Main.netMode == NetmodeID.SinglePlayer)
-					Main.NewText(Language.GetTextValue($"LegacyMisc.{num5}"), color);
-				else if (Main.netMode == NetmodeID.Server)
-					ChatHelper.BroadcastChatMessage(NetworkText.FromKey(Language.GetText($"LegacyMisc.{num5}").Key),
-						color);
+				switch (Main.netMode)
+				{
+					case NetmodeID.SinglePlayer:
+						Main.NewText(Language.GetTextValue($"LegacyMisc.{num5}"), color);
+						break;
+					case NetmodeID.Server:
+						ChatHelper.BroadcastChatMessage(NetworkText.FromKey(Language.GetText($"LegacyMisc.{num5}").Key),
+							color);
+						break;
+				}
 
 				num = WorldGen.SavedOreTiers.Adamantite;
 				break;
@@ -138,23 +143,26 @@ public static class AltarSmash
 		if (flag)
 			NetMessage.SendData(MessageID.WorldData);
 
+		double minY;
+		switch (num)
+		{
+			case TileID.Mythril:
+			case TileID.Orichalcum:
+				minY = Main.rockLayer;
+				break;
+			case TileID.Adamantite:
+			case TileID.Titanium:
+				minY = (Main.rockLayer + Main.rockLayer + Main.maxTilesY) / 3.0;
+				break;
+			default:
+				minY = Main.worldSurface;
+				break;
+		}
 		for (int k = 0; k < num3; k++)
 		{
-			double minY = Main.worldSurface;
-			switch (num)
-			{
-				case TileID.Mythril:
-				case TileID.Orichalcum:
-					minY = Main.rockLayer;
-					break;
-				case TileID.Adamantite:
-				case TileID.Titanium:
-					minY = (Main.rockLayer + Main.rockLayer + Main.maxTilesY) / 3.0;
-					break;
-			}
 
 			int xx = WorldGen.genRand.Next(100, Main.maxTilesX - 100);
-			int yy = WorldGen.genRand.Next((int)minY, Main.maxTilesY - 150);
+			int yy;
 			if (Main.remixWorld)
 			{
 				double max = num switch
@@ -165,6 +173,10 @@ public static class AltarSmash
 				};
 				yy = WorldGen.genRand.Next((int)Main.worldSurface + 15, (int)max);
 			}
+			else
+			{
+				yy = WorldGen.genRand.Next((int)minY, Main.maxTilesY - 150);
+			}
 
 			if (Main.tenthAnniversaryWorld)
 				WorldGen.OreRunner(xx, yy, WorldGen.genRand.Next(5, 11 + num4), WorldGen.genRand.Next(5, 11 + num4),
@@ -172,27 +184,6 @@ public static class AltarSmash
 			else
 				WorldGen.OreRunner(xx, yy, WorldGen.genRand.Next(5, 9 + num4), WorldGen.genRand.Next(5, 9 + num4),
 					(ushort)num);
-		}
-
-		int num9 = WorldGen.genRand.Next(3);
-		int tries = 0;
-		while (num9 != 2 && tries++ < 1000)
-		{
-			int xx = WorldGen.genRand.Next(100, Main.maxTilesX - 100);
-			int yy = WorldGen.genRand.Next((int)Main.rockLayer + 50, Main.maxTilesY - 300);
-			Tile tile = Main.tile[xx, yy];
-			if (!tile.HasTile || tile.TileType != TileID.Stone)
-				continue;
-
-			if (num9 == 0)
-				tile.TileType = WorldGen.crimson ? TileID.Crimstone : TileID.Ebonstone;
-			else
-				tile.TileType = TileID.Pearlstone;
-
-			if (Main.netMode == NetmodeID.Server)
-				NetMessage.SendTileSquare(-1, xx, yy);
-
-			break;
 		}
 
 		if (Main.netMode != NetmodeID.MultiplayerClient)
